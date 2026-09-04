@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>眠りの記録 – 睡眠日誌</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#FFF5F3;
+    --surface:#FFFFFF;
+    --surface2:#FFEDE9;
+    --border:#FBD9D2;
+    --text:#6B4A45;
+    --text-dim:#C0968F;
+    --main:#F8AFA6;
+    --main-strong:#F2897D;
+    --accent-orange:#FFC49B;
+    --accent-beige:#F5E6D8;
+
+    --c-sleep:#F5A9A0;
+    --c-sleep-alt:#FFFFFF;
+    --c-med:#CDA089;
+    --c-waking:#E8798A;
+
+    --radius:18px;
+    --shadow:0 6px 18px rgba(240,150,140,0.16);
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+
+  .app{
+    max-width:560px;
+    margin:0 auto;
+    padding:20px 16px 8px;
+  }
+
+  header{
+    padding:8px 4px 20px;
+  }
+  header h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 6px;
+    letter-spacing:0.01em;
+    color:var(--main-strong);
+  }
+  header p{
+    margin:0;
+    color:var(--text-dim);
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  /* --- Tabs --- */
+  .tabs{
+    display:flex;
+    gap:6px;
+    background:var(--surface2);
+    padding:6px;
+    border-radius:22px;
+    margin-bottom:18px;
+    border:1px solid var(--border);
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:11px 8px;
+    border-radius:18px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--text-dim);
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .15s ease, color .15s ease;
+  }
+  .tab-btn.active{
+    background:var(--main-strong);
+    color:#FFFFFF;
+    box-shadow:0 4px 10px rgba(242,137,125,0.35);
+  }
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px 16px;
+    margin-bottom:16px;
+  }
+
+  .card h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    margin:0 0 14px;
+    color:var(--main-strong);
+  }
+
+  .hero-stat{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .hero-stat .num{
+    font-family:'Fraunces',serif;
+    font-size:42px;
+    font-weight:600;
+    color:var(--main-strong);
+    line-height:1;
+  }
+  .hero-stat .label{
+    color:var(--text-dim);
+    font-size:13px;
+  }
+  .hero-sub{
+    margin-top:6px;
+    color:var(--text-dim);
+    font-size:13px;
+  }
+
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+
+  input[type="time"], input[type="date"]{
+    width:100%;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:11px 10px;
+    border-radius:12px;
+    font-size:15px;
+    font-family:inherit;
+  }
+  input[type="time"]:focus, input[type="date"]:focus{
+    outline:2px solid var(--main);
+    outline-offset:1px;
+  }
+
+  .field{
+    margin-bottom:14px;
+  }
+
+  .time-range{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .time-range input{flex:1;min-width:0;}
+  .time-range .to-sep{
+    color:var(--text-dim);
+    font-size:13px;
+    flex-shrink:0;
+  }
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px;
+    margin-bottom:6px;
+  }
+  @media (min-width:480px){
+    .field-grid{grid-template-columns:1fr 1fr;}
+  }
+
+  .nap-section{
+    margin:18px 0 6px;
+    padding-top:14px;
+    border-top:1px dashed var(--border);
+  }
+  .nap-details{
+    margin-top:14px;
+    padding:14px;
+    background:var(--surface2);
+    border-radius:14px;
+  }
+  .nap-details .field:last-child{margin-bottom:0;}
+
+  .wakings{
+    margin:18px 0 6px;
+    padding-top:14px;
+    border-top:1px dashed var(--border);
+  }
+  .wakings-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .wakings-header span{
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  #addWaking{
+    background:none;
+    border:1px solid var(--c-waking);
+    color:var(--c-waking);
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .waking-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+  .waking-row input{flex:1;}
+  .remove-waking{
+    flex-shrink:0;
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--surface2);
+    color:var(--text-dim);
+    font-size:18px;
+    cursor:pointer;
+    line-height:1;
+  }
+
+  fieldset.quality{
+    border:none;
+    padding:14px 0 4px;
+    margin:14px 0 6px;
+    border-top:1px dashed var(--border);
+  }
+  .nap-details fieldset.quality{
+    border-top:none;
+    padding-top:0;
+    margin-top:0;
+  }
+  fieldset.quality legend{
+    font-size:13px;
+    color:var(--text-dim);
+    padding:0;
+    margin-bottom:8px;
+  }
+  .quality-options{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .quality-options label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:9px 12px;
+    border-radius:20px;
+    font-size:14px;
+    color:var(--text);
+    cursor:pointer;
+    margin:0;
+  }
+  .nap-details .quality-options label{
+    background:var(--surface);
+  }
+  .quality-options input{
+    accent-color:var(--main-strong);
+    width:16px;height:16px;
+  }
+
+  .save-btn{
+    width:100%;
+    margin-top:18px;
+    background:var(--main-strong);
+    color:#FFFFFF;
+    border:none;
+    padding:14px;
+    font-size:15px;
+    font-weight:600;
+    border-radius:24px;
+    cursor:pointer;
+    font-family:inherit;
+    box-shadow:0 6px 14px rgba(242,137,125,0.35);
+  }
+  .save-btn:active{opacity:0.85;}
+
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+  }
+  .month-nav h2{margin:0;font-size:16px;color:var(--main-strong);font-family:'Fraunces',serif;}
+  .month-nav button{
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--main-strong);
+    width:38px;height:38px;
+    border-radius:12px;
+    font-size:16px;
+    cursor:pointer;
+  }
+
+  .month-stats{
+    display:flex;
+    gap:18px;
+    padding:0 4px 14px;
+    color:var(--text-dim);
+    font-size:13px;
+    flex-wrap:wrap;
+  }
+  .month-stats b{color:var(--text);font-size:15px;}
+
+  .empty-state{
+    color:var(--text-dim);
+    font-size:14px;
+    text-align:center;
+    padding:20px 6px;
+  }
+
+  /* --- Timeline --- */
+  .day-block{
+    margin-bottom:26px;
+  }
+  .day-block:last-child{margin-bottom:4px;}
+  .day-title{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .day-title .date-line{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    flex-wrap:wrap;
+    font-weight:600;
+    color:var(--text);
+  }
+  .day-title .q-tag{
+    color:var(--main-strong);
+    background:var(--surface2);
+    padding:2px 9px;
+    border-radius:20px;
+    font-size:11px;
+    border:1px solid var(--border);
+  }
+  .timeline-bar{
+    position:relative;
+    height:46px;
+    border-radius:10px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    margin-bottom:4px;
+    overflow:hidden;
+  }
+  .sleep-band{
+    position:absolute;
+    top:5px;
+    bottom:5px;
+    border-radius:9px;
+    border:1.5px solid rgba(107,74,69,0.25);
+  }
+  .grid-line{
+    position:absolute;
+    top:0;bottom:0;
+    width:1px;
+    background:rgba(107,74,69,0.14);
+  }
+  .event-dot{
+    position:absolute;
+    top:50%;
+    width:11px;height:11px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    border:2px solid var(--surface);
+  }
+  .axis-labels{
+    position:relative;
+    height:14px;
+    margin-bottom:6px;
+  }
+  .axis-labels span{
+    position:absolute;
+    transform:translateX(-50%);
+    font-size:10px;
+    color:var(--text-dim);
+  }
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 14px;
+    margin-top:10px;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .legend i{
+    width:9px;height:9px;border-radius:50%;display:inline-block;
+  }
+  .legend i.rect{
+    width:16px;height:9px;border-radius:3px;
+  }
+  .quality-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    margin-top:8px;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .quality-legend span{display:flex;align-items:center;gap:6px;}
+  .quality-legend i{
+    width:22px;height:11px;border-radius:4px;display:inline-block;
+    border:1px solid rgba(107,74,69,0.25);
+  }
+
+  /* --- List --- */
+  .record-item{
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    font-size:13px;
+    background:var(--surface);
+  }
+  .record-item:last-child{margin-bottom:0;}
+  .record-item .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .record-item .top-row .date-label{
+    font-weight:600;
+    font-size:14px;
+    color:var(--main-strong);
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .total-badge{
+    font-weight:500;
+    font-size:12px;
+    color:var(--text-dim);
+    background:var(--surface2);
+    padding:2px 9px;
+    border-radius:20px;
+  }
+  .record-item .actions button{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:12px;
+    cursor:pointer;
+    padding:4px 6px;
+  }
+  .record-item .actions button.danger{color:var(--c-waking);}
+  .record-item .details{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 14px;
+    color:var(--text-dim);
+  }
+  .record-item .details b{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>眠りの記録</h1>
+    <p>毎晩の眠りを記録して、月ごとに振り返るための日誌です。</p>
+  </header>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="record">記録する</button>
+    <button type="button" class="tab-btn" data-tab="view">記録を見る</button>
+  </div>
+
+  <!-- ============ 記録する ============ -->
+  <div class="tab-panel active" id="tab-record">
+    <section class="card entry-form">
+      <h2>今日を記録する</h2>
+
+      <div class="field">
+        <label for="logDate">日付</label>
+        <input type="date" id="logDate">
+      </div>
+
+      <div class="nap-section">
+        <label>昼寝の有無（前日）</label>
+        <div class="quality-options">
+          <label><input type="radio" name="napEnabled" value="yes">あり</label>
+          <label><input type="radio" name="napEnabled" value="no" checked>なし</label>
+        </div>
+
+        <div class="nap-details" id="napDetails" style="display:none;">
+          <div class="field">
+            <label>昼寝の時間</label>
+            <div class="time-range">
+              <input type="time" id="napStart" aria-label="昼寝の開始時間">
+              <span class="to-sep">〜</span>
+              <input type="time" id="napEnd" aria-label="昼寝の終了時間">
+            </div>
+          </div>
+          <fieldset class="quality">
+            <legend>昼寝の睡眠評価</legend>
+            <div class="quality-options">
+              <label><input type="radio" name="napQuality" value="good">よく眠れた</label>
+              <label><input type="radio" name="napQuality" value="half">半覚醒</label>
+              <label><input type="radio" name="napQuality" value="both">どちらも</label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="wakings">
+        <div class="wakings-header">
+          <span>睡眠薬を飲んだ時間</span>
+          <button type="button" id="addMed">+ 追加</button>
+        </div>
+        <div id="medsList"></div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="bedTime">布団で目を閉じた時間</label>
+          <input type="time" id="bedTime">
+        </div>
+        <div class="field">
+          <label for="wakeTime">朝起きた時間</label>
+          <input type="time" id="wakeTime">
+        </div>
+      </div>
+
+      <div class="wakings">
+        <div class="wakings-header">
+          <span>中途覚醒</span>
+          <button type="button" id="addWaking">+ 追加</button>
+        </div>
+        <div id="wakingsList"></div>
+      </div>
+
+      <fieldset class="quality">
+        <legend>夜の睡眠評価</legend>
+        <div class="quality-options">
+          <label><input type="radio" name="quality" value="good">よく眠れた</label>
+          <label><input type="radio" name="quality" value="half">半覚醒</label>
+          <label><input type="radio" name="quality" value="both">どちらも</label>
+        </div>
+      </fieldset>
+
+      <button class="save-btn" id="saveBtn">この日を保存</button>
+    </section>
+  </div>
+
+  <!-- ============ 記録を見る ============ -->
+  <div class="tab-panel" id="tab-view">
+    <section class="card" id="heroCard">
+      <div class="hero-stat">
+        <span class="num" id="heroNum">--</span>
+        <span class="label">直近の睡眠時間</span>
+      </div>
+      <div class="hero-sub" id="heroSub">まだ記録がありません</div>
+    </section>
+
+    <section class="card month-nav">
+      <button type="button" id="prevMonth" aria-label="前の月">←</button>
+      <h2 id="monthLabel">2026年9月</h2>
+      <button type="button" id="nextMonth" aria-label="次の月">→</button>
+    </section>
+
+    <div class="month-stats" id="monthStats"></div>
+
+    <section class="card timeline-section">
+      <h2>タイムライン（10:00〜翌10:00）</h2>
+      <div id="timelineContainer"></div>
+      <div class="legend">
+        <span><i class="rect" style="background:var(--c-sleep)"></i>睡眠時間（夜・昼寝）</span>
+        <span><i style="background:var(--c-med)"></i>服薬</span>
+        <span><i style="background:var(--c-waking)"></i>中途覚醒</span>
+      </div>
+      <div class="quality-legend">
+        <span><i style="background:var(--c-sleep);opacity:1;"></i>よく眠れた</span>
+        <span><i style="background:var(--c-sleep);opacity:0.45;"></i>半覚醒</span>
+        <span><i style="background:repeating-linear-gradient(135deg,var(--c-sleep) 0px,var(--c-sleep) 5px,#fff 5px,#fff 10px);"></i>どちらも</span>
+      </div>
+    </section>
+
+    <section class="card list-section">
+      <h2>記録一覧</h2>
+      <div id="recordList"></div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'sleepDiary.records.v1';
+
+  // ---------- utils ----------
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function todayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function loadRecords(){
+    let recs = {};
+    try{
+      recs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    }catch(e){ recs = {}; }
+    // 旧バージョンのデータを移行
+    Object.values(recs).forEach(r=>{
+      if(r.nap && !r.napStart){
+        r.napStart = r.nap;
+        r.napEnd = r.napEnd || '';
+      }
+      delete r.nap;
+      if(!r.napEnabled){
+        r.napEnabled = (r.napStart || r.napEnd) ? 'yes' : 'no';
+      }
+      if(r.napEnabled === 'yes' && !r.napQuality){
+        r.napQuality = r.quality || '';
+      }
+      if(!r.meds){
+        r.meds = r.med ? [r.med] : [];
+      }
+      delete r.med;
+    });
+    return recs;
+  }
+  function saveRecords(obj){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  }
+  // "HH:MM" を 0-24 の位置に変換。0 = 10:00、24 = 翌10:00
+  function timeToPos(t){
+    if(!t) return null;
+    const [h,m] = t.split(':').map(Number);
+    const hour = h + m/60;
+    return hour >= 10 ? (hour - 10) : (hour + 14);
+  }
+  function qualityLabel(q){
+    return q === 'good' ? 'よく眠れた' : q === 'half' ? '半覚醒' : q === 'both' ? 'どちらも' : '';
+  }
+  // 夜の睡眠・昼寝の時間と合計を計算する共通関数
+  function computeDurations(rec){
+    const bedPos = timeToPos(rec.bed), wakePos = timeToPos(rec.wake);
+    let nightMins = 0, hasNight = false;
+    if(bedPos != null && wakePos != null){
+      let d = wakePos - bedPos; if(d < 0) d += 24;
+      nightMins = d*60; hasNight = true;
+    }
+    let napMins = 0, hasNap = false;
+    if(rec.napEnabled === 'yes' && rec.napStart && rec.napEnd){
+      const ns = timeToPos(rec.napStart), ne = timeToPos(rec.napEnd);
+      let nd = ne - ns; if(nd < 0) nd += 24;
+      napMins = nd*60; hasNap = true;
+    }
+    const totalMins = nightMins + napMins;
+    return {
+      nightMins, hasNight,
+      napMins, hasNap,
+      totalMins,
+      durText: hasNight ? minutesToHM(nightMins) : '--',
+      totalText: (hasNight || hasNap) ? minutesToHM(totalMins) : '--'
+    };
+  }
+  function minutesToHM(mins){
+    if(mins == null || isNaN(mins)) return '--';
+    const h = Math.floor(mins/60);
+    const m = Math.round(mins%60);
+    return `${h}時間${m}分`;
+  }
+  // 睡眠評価に応じた帯の見た目（色 / 透明度 / 柄）を返す
+  function applyQualityStyle(el, quality, baseColor, altColor){
+    if(quality === 'both'){
+      el.style.background = `repeating-linear-gradient(135deg, ${baseColor} 0px, ${baseColor} 8px, ${altColor} 8px, ${altColor} 16px)`;
+      el.style.opacity = '1';
+    }else if(quality === 'half'){
+      el.style.background = baseColor;
+      el.style.opacity = '0.45';
+    }else{
+      el.style.background = baseColor;
+      el.style.opacity = '1';
+    }
+  }
+
+  // ---------- state ----------
+  let records = loadRecords();
+  const now = new Date();
+  let viewYear = now.getFullYear();
+  let viewMonth = now.getMonth() + 1; // 1-12
+
+  // ---------- DOM refs ----------
+  const logDate = document.getElementById('logDate');
+  const napStartInput = document.getElementById('napStart');
+  const napEndInput = document.getElementById('napEnd');
+  const napDetails = document.getElementById('napDetails');
+  const medsList = document.getElementById('medsList');
+  const addMedBtn = document.getElementById('addMed');
+  const bedTime = document.getElementById('bedTime');
+  const wakeTime = document.getElementById('wakeTime');
+  const wakingsList = document.getElementById('wakingsList');
+  const addWakingBtn = document.getElementById('addWaking');
+  const saveBtn = document.getElementById('saveBtn');
+  const monthLabel = document.getElementById('monthLabel');
+  const monthStats = document.getElementById('monthStats');
+  const timelineContainer = document.getElementById('timelineContainer');
+  const recordList = document.getElementById('recordList');
+  const heroNum = document.getElementById('heroNum');
+  const heroSub = document.getElementById('heroSub');
+
+  logDate.value = todayStr();
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- nap toggle ----------
+  function setNapEnabled(value){
+    document.querySelectorAll('input[name="napEnabled"]').forEach(r=>{
+      r.checked = (r.value === value);
+    });
+    napDetails.style.display = (value === 'yes') ? 'block' : 'none';
+  }
+  document.querySelectorAll('input[name="napEnabled"]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      napDetails.style.display = (r.value === 'yes') ? 'block' : 'none';
+    });
+  });
+
+  // ---------- med rows ----------
+  function addMedRow(value){
+    const row = document.createElement('div');
+    row.className = 'waking-row';
+    row.innerHTML = `<input type="time" class="med-input" value="${value || ''}">
+      <button type="button" class="remove-waking" aria-label="削除">×</button>`;
+    row.querySelector('.remove-waking').addEventListener('click', ()=> row.remove());
+    medsList.appendChild(row);
+  }
+  addMedBtn.addEventListener('click', ()=> addMedRow(''));
+
+  function getMedValues(){
+    return Array.from(medsList.querySelectorAll('.med-input'))
+      .map(i => i.value).filter(v => v);
+  }
+
+  // ---------- waking rows ----------
+  function addWakingRow(value){
+    const row = document.createElement('div');
+    row.className = 'waking-row';
+    row.innerHTML = `<input type="time" class="waking-input" value="${value || ''}">
+      <button type="button" class="remove-waking" aria-label="削除">×</button>`;
+    row.querySelector('.remove-waking').addEventListener('click', ()=> row.remove());
+    wakingsList.appendChild(row);
+  }
+  addWakingBtn.addEventListener('click', ()=> addWakingRow(''));
+
+  function getWakingValues(){
+    return Array.from(wakingsList.querySelectorAll('.waking-input'))
+      .map(i => i.value).filter(v => v);
+  }
+
+  function clearForm(){
+    setNapEnabled('no');
+    napStartInput.value = '';
+    napEndInput.value = '';
+    document.querySelectorAll('input[name="napQuality"]').forEach(r => r.checked = false);
+    medsList.innerHTML = '';
+    addMedRow('');
+    bedTime.value = '';
+    wakeTime.value = '';
+    wakingsList.innerHTML = '';
+    addWakingRow('');
+    document.querySelectorAll('input[name="quality"]').forEach(r => r.checked = false);
+  }
+
+  function loadFormFromRecord(rec){
+    setNapEnabled(rec.napEnabled === 'yes' ? 'yes' : 'no');
+    napStartInput.value = rec.napStart || '';
+    napEndInput.value = rec.napEnd || '';
+    document.querySelectorAll('input[name="napQuality"]').forEach(r => {
+      r.checked = (r.value === rec.napQuality);
+    });
+    medsList.innerHTML = '';
+    if(rec.meds && rec.meds.length){
+      rec.meds.forEach(m => addMedRow(m));
+    }else{
+      addMedRow('');
+    }
+    bedTime.value = rec.bed || '';
+    wakeTime.value = rec.wake || '';
+    wakingsList.innerHTML = '';
+    if(rec.wakings && rec.wakings.length){
+      rec.wakings.forEach(w => addWakingRow(w));
+    }else{
+      addWakingRow('');
+    }
+    document.querySelectorAll('input[name="quality"]').forEach(r => {
+      r.checked = (r.value === rec.quality);
+    });
+  }
+
+  function populateFormForDate(dateStr){
+    const rec = records[dateStr];
+    if(rec){ loadFormFromRecord(rec); }
+    else{ clearForm(); }
+  }
+
+  logDate.addEventListener('change', ()=> populateFormForDate(logDate.value));
+  populateFormForDate(logDate.value);
+
+  // ---------- save ----------
+  saveBtn.addEventListener('click', ()=>{
+    const dateStr = logDate.value;
+    if(!dateStr){ alert('日付を選択してください'); return; }
+    const qualityEl = document.querySelector('input[name="quality"]:checked');
+    const napEnabledEl = document.querySelector('input[name="napEnabled"]:checked');
+    const napQualityEl = document.querySelector('input[name="napQuality"]:checked');
+    const napEnabled = napEnabledEl ? napEnabledEl.value : 'no';
+    records[dateStr] = {
+      date: dateStr,
+      napEnabled: napEnabled,
+      napStart: napEnabled === 'yes' ? (napStartInput.value || '') : '',
+      napEnd: napEnabled === 'yes' ? (napEndInput.value || '') : '',
+      napQuality: napEnabled === 'yes' ? (napQualityEl ? napQualityEl.value : '') : '',
+      meds: getMedValues(),
+      bed: bedTime.value || '',
+      wake: wakeTime.value || '',
+      wakings: getWakingValues(),
+      quality: qualityEl ? qualityEl.value : ''
+    };
+    saveRecords(records);
+    const [y,m] = dateStr.split('-').map(Number);
+    viewYear = y; viewMonth = m;
+    renderMonth();
+    renderHero();
+    saveBtn.textContent = '保存しました ✓';
+    setTimeout(()=> saveBtn.textContent = 'この日を保存', 1400);
+  });
+
+  // ---------- delete/edit ----------
+  function deleteRecord(dateStr){
+    if(!confirm(`${dateStr} の記録を削除しますか？`)) return;
+    delete records[dateStr];
+    saveRecords(records);
+    renderMonth();
+    renderHero();
+    if(logDate.value === dateStr){ clearForm(); }
+  }
+  function editRecord(dateStr){
+    logDate.value = dateStr;
+    populateFormForDate(dateStr);
+    document.querySelector('.tab-btn[data-tab="record"]').click();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  // ---------- month navigation ----------
+  document.getElementById('prevMonth').addEventListener('click', ()=>{
+    viewMonth--; if(viewMonth < 1){ viewMonth = 12; viewYear--; }
+    renderMonth();
+  });
+  document.getElementById('nextMonth').addEventListener('click', ()=>{
+    viewMonth++; if(viewMonth > 12){ viewMonth = 1; viewYear++; }
+    renderMonth();
+  });
+
+  function monthRecords(){
+    const prefix = `${viewYear}-${pad(viewMonth)}`;
+    return Object.values(records)
+      .filter(r => r.date.startsWith(prefix))
+      .sort((a,b) => a.date.localeCompare(b.date));
+  }
+
+  // ---------- timeline rendering ----------
+  const GRID_POINTS = [
+    {pos:0, label:'10'}, {pos:3, label:'13'}, {pos:6, label:'16'},
+    {pos:9, label:'19'}, {pos:12, label:'22'}, {pos:15, label:'1'},
+    {pos:18, label:'4'}, {pos:21, label:'7'}, {pos:24, label:'10'}
+  ];
+
+  function buildTimelineRow(rec){
+    const wrap = document.createElement('div');
+    wrap.className = 'day-block';
+
+    const totals = computeDurations(rec);
+    const title = document.createElement('div');
+    title.className = 'day-title';
+    const qTag = rec.quality ? `<span class="q-tag">${qualityLabel(rec.quality)}</span>` : '';
+    title.innerHTML = `<span class="date-line">${rec.date}<span class="total-badge">合計：${totals.totalText}</span></span>${qTag}`;
+    wrap.appendChild(title);
+
+    const axisLabels = document.createElement('div');
+    axisLabels.className = 'axis-labels';
+    GRID_POINTS.forEach(g=>{
+      const s = document.createElement('span');
+      s.style.left = (g.pos/24*100) + '%';
+      s.textContent = g.label;
+      axisLabels.appendChild(s);
+    });
+    wrap.appendChild(axisLabels);
+
+    const bar = document.createElement('div');
+    bar.className = 'timeline-bar';
+
+    GRID_POINTS.forEach(g=>{
+      const line = document.createElement('div');
+      line.className = 'grid-line';
+      line.style.left = (g.pos/24*100) + '%';
+      bar.appendChild(line);
+    });
+
+    // 夜の睡眠（就寝〜起床）を帯で表示
+    const bedPos = timeToPos(rec.bed);
+    const wakePos = timeToPos(rec.wake);
+    if(totals.hasNight){
+      const band = document.createElement('div');
+      band.className = 'sleep-band';
+      band.style.left = (bedPos/24*100) + '%';
+      band.style.width = (totals.nightMins/60/24*100) + '%';
+      applyQualityStyle(band, rec.quality, 'var(--c-sleep)', 'var(--c-sleep-alt)');
+      band.title = `夜の睡眠: ${minutesToHM(totals.nightMins)}${rec.quality ? '（' + qualityLabel(rec.quality) + '）' : ''}`;
+      bar.appendChild(band);
+    }
+
+    // 昼寝を帯で表示（「あり」の場合のみ）
+    if(rec.napEnabled === 'yes'){
+      const napStartPos = timeToPos(rec.napStart);
+      const napEndPos = timeToPos(rec.napEnd);
+      if(totals.hasNap){
+        const napBand = document.createElement('div');
+        napBand.className = 'sleep-band';
+        napBand.style.left = (napStartPos/24*100) + '%';
+        napBand.style.width = (totals.napMins/60/24*100) + '%';
+        applyQualityStyle(napBand, rec.napQuality, 'var(--c-sleep)', 'var(--c-sleep-alt)');
+        napBand.title = `昼寝: ${minutesToHM(totals.napMins)}${rec.napQuality ? '（' + qualityLabel(rec.napQuality) + '）' : ''}`;
+        bar.appendChild(napBand);
+      }else if(napStartPos != null || napEndPos != null){
+        const pos = napStartPos != null ? napStartPos : napEndPos;
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        dot.style.left = (pos/24*100) + '%';
+        dot.style.background = 'var(--c-sleep)';
+        dot.title = `昼寝: ${rec.napStart || rec.napEnd}`;
+        bar.appendChild(dot);
+      }
+    }
+
+    function addDot(time, color, label){
+      const pos = timeToPos(time);
+      if(pos == null) return;
+      const dot = document.createElement('div');
+      dot.className = 'event-dot';
+      dot.style.left = (pos/24*100) + '%';
+      dot.style.background = color;
+      dot.title = `${label}: ${time}`;
+      bar.appendChild(dot);
+    }
+    (rec.meds||[]).forEach(m => addDot(m, 'var(--c-med)', '服薬'));
+    (rec.wakings||[]).forEach(w => addDot(w, 'var(--c-waking)', '中途覚醒'));
+
+    wrap.appendChild(bar);
+    return wrap;
+  }
+
+  // ---------- list rendering ----------
+  function buildListItem(rec){
+    const item = document.createElement('div');
+    item.className = 'record-item';
+
+    const totals = computeDurations(rec);
+
+    let napText = '';
+    if(rec.napEnabled === 'yes'){
+      if(rec.napStart && rec.napEnd){
+        napText = `${rec.napStart}〜${rec.napEnd}`;
+      }else if(rec.napStart || rec.napEnd){
+        napText = rec.napStart || rec.napEnd;
+      }else{
+        napText = 'あり';
+      }
+      if(rec.napQuality) napText += `（${qualityLabel(rec.napQuality)}）`;
+    }
+
+    item.innerHTML = `
+      <div class="top-row">
+        <span class="date-label">${rec.date}<span class="total-badge">合計：${totals.totalText}</span></span>
+        <span class="actions">
+          <button type="button" class="edit-btn">編集</button>
+          <button type="button" class="danger delete-btn">削除</button>
+        </span>
+      </div>
+      <div class="details">
+        <span><b>夜の睡眠時間</b> ${totals.durText}</span>
+        ${rec.bed ? `<span>就寝 <b>${rec.bed}</b></span>` : ''}
+        ${rec.wake ? `<span>起床 <b>${rec.wake}</b></span>` : ''}
+        ${(rec.meds && rec.meds.length) ? `<span>服薬 <b>${rec.meds.join(' / ')}</b></span>` : ''}
+        ${napText ? `<span>前日昼寝 <b>${napText}</b></span>` : ''}
+        ${(rec.wakings && rec.wakings.length) ? `<span>中途覚醒 <b>${rec.wakings.join(' / ')}</b></span>` : ''}
+        ${rec.quality ? `<span>評価 <b>${qualityLabel(rec.quality)}</b></span>` : ''}
+      </div>
+    `;
+    item.querySelector('.edit-btn').addEventListener('click', ()=> editRecord(rec.date));
+    item.querySelector('.delete-btn').addEventListener('click', ()=> deleteRecord(rec.date));
+    return item;
+  }
+
+  // ---------- month render ----------
+  function renderMonth(){
+    monthLabel.textContent = `${viewYear}年${viewMonth}月`;
+    const list = monthRecords();
+
+    if(list.length === 0){
+      monthStats.innerHTML = '';
+    }else{
+      let totalMins = 0, counted = 0;
+      list.forEach(r=>{
+        const b = timeToPos(r.bed), w = timeToPos(r.wake);
+        if(b != null && w != null){
+          let d = w - b; if(d<0) d += 24;
+          totalMins += d*60; counted++;
+        }
+      });
+      const avg = counted ? minutesToHM(totalMins/counted) : '--';
+      monthStats.innerHTML = `<span>記録日数 <b>${list.length}日</b></span><span>平均睡眠時間 <b>${avg}</b></span>`;
+    }
+
+    timelineContainer.innerHTML = '';
+    if(list.length === 0){
+      timelineContainer.innerHTML = '<div class="empty-state">この月の記録はまだありません</div>';
+    }else{
+      list.slice().reverse().forEach(rec => timelineContainer.appendChild(buildTimelineRow(rec)));
+    }
+
+    recordList.innerHTML = '';
+    if(list.length === 0){
+      recordList.innerHTML = '<div class="empty-state">この月の記録はまだありません</div>';
+    }else{
+      list.slice().reverse().forEach(rec => recordList.appendChild(buildListItem(rec)));
+    }
+  }
+
+  // ---------- hero ----------
+  function renderHero(){
+    const dates = Object.keys(records).sort();
+    if(dates.length === 0){
+      heroNum.textContent = '--';
+      heroSub.textContent = 'まだ記録がありません';
+      return;
+    }
+    const last = records[dates[dates.length-1]];
+    const b = timeToPos(last.bed), w = timeToPos(last.wake);
+    if(b != null && w != null){
+      let d = w - b; if(d<0) d += 24;
+      heroNum.textContent = minutesToHM(d*60);
+    }else{
+      heroNum.textContent = '--';
+    }
+    heroSub.textContent = `${last.date} の記録${last.quality ? '　・　' + qualityLabel(last.quality) : ''}`;
+  }
+
+  renderMonth();
+  renderHero();
+})();
+</script>
+</body>
+</html>
