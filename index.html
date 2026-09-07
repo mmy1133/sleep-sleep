@@ -485,6 +485,10 @@
     transform:translate(-50%,-50%);
     border:2px solid var(--surface);
   }
+  .med-dot{
+    border-radius:2px;
+    transform:translate(-50%,-50%) rotate(45deg);
+  }
   .axis-labels{
     position:relative;
     height:14px;
@@ -512,6 +516,10 @@
   }
   .legend i.rect{
     width:16px;height:9px;border-radius:3px;
+  }
+  .legend i.diamond{
+    border-radius:2px;
+    transform:rotate(45deg);
   }
   .quality-legend{
     display:flex;
@@ -785,6 +793,10 @@
     border-radius:50%;
     transform:translate(-50%,-50%);
   }
+  .print-med-dot{
+    border-radius:0.5px;
+    transform:translate(-50%,-50%) rotate(45deg);
+  }
   .print-axis-label{
     position:absolute;
     transform:translateX(-50%);
@@ -994,7 +1006,7 @@
       <div id="timelineContainer"></div>
       <div class="legend">
         <span><i class="rect" style="background:var(--c-sleep)"></i>睡眠時間（昼寝・夜①・夜②）</span>
-        <span><i style="background:var(--c-med)"></i>服薬</span>
+        <span><i class="diamond" style="background:var(--c-med)"></i>服薬</span>
         <span><i style="background:var(--c-waking)"></i>中途覚醒</span>
       </div>
       <div class="quality-legend">
@@ -1259,21 +1271,14 @@
     });
     return best;
   }
-  // 服薬のように「睡眠より前に行われるはずの出来事」の日時を求める。
-  // 就寝時刻以前になる候補（前々日〜翌日の範囲で探す）のうち、就寝に最も近い
-  // ものを採用する。就寝以前の候補が1つもない場合のみ、単純に最も近い候補を返す。
-  // resolveWithinRange は「範囲内かどうか」で判定するため、服薬のように就寝の
-  // 数時間〜半日前に行われる場合、範囲外どうしの距離比較で就寝“後”の時刻の方が
-  // 近いと判定されてしまうことがある。服薬は原則「就寝前」に起きる前提で解決する。
-  function resolveBeforeMoment(timeStr, moment){
-    const baseDateStr = dateStrOfLocal(moment);
-    const base = combineDateTime(baseDateStr, timeStr);
-    const candidates = [addDays(base, -2), addDays(base, -1), base, addDays(base, 1)];
-    const beforeOrAt = candidates.filter(c => c.getTime() <= moment.getTime());
-    if(beforeOrAt.length){
-      return beforeOrAt.reduce((a,b) => b.getTime() > a.getTime() ? b : a);
-    }
-    return candidates.reduce((a,b) => Math.abs(b - moment) < Math.abs(a - moment) ? b : a);
+  // 服薬は睡眠セッションとは関連付けず、その日のタイムラインの軸
+  // （14時始まり・翌14時終わり、中間が2時）にそのまま当てはめるだけにする。
+  // 14時以降なら軸の開始日、14時より前（0時〜13時台）なら軸の開始日の翌日とする。
+  // こうすることで、服薬をいくつ追加しても睡眠セッションの表示には一切影響しない。
+  function resolveOnAxis(timeStr, timelineStart){
+    const hour = toHourDecimal(timeStr);
+    const dateStr = hour >= 14 ? dateStrOfLocal(timelineStart) : dateStrOfLocal(addDays(timelineStart, 1));
+    return combineDateTime(dateStr, timeStr);
   }
 
   // ---------- 睡眠セッションのモデル ----------
@@ -1819,12 +1824,9 @@
     });
     (rec.meds||[]).forEach(m=>{
       if(!m) return;
-      const night1 = tl.sessions.find(s=>s.key==='night1');
-      const firstRange = tl.sessions.map(s=>s.range).find(Boolean);
-      const refMoment = (night1 && night1.range) ? night1.range.start : (firstRange ? firstRange.start : null);
-      const dt = refMoment ? resolveBeforeMoment(m, refMoment) : combineDateTime(rec.date, m);
+      const dt = resolveOnAxis(m, tl.timelineStart);
       const pct = clampPct(diffMinutes(tl.timelineStart, dt)/totalMinutes*100);
-      inner += `<div class="print-dot" style="left:${pct}%;background:var(--c-med);"></div>`;
+      inner += `<div class="print-dot print-med-dot" style="left:${pct}%;background:var(--c-med);"></div>`;
     });
     const totals = computeDurations(rec);
     return `<tr class="day-row">
@@ -2083,18 +2085,15 @@
       }
     });
 
-    // 服薬（睡眠薬は基本的に就寝前に飲むものなので、夜の睡眠①の就寝時刻を
-    // 基準に「就寝以前で最も近い時刻」として日付を判定する）
+    // 服薬（睡眠セッションとは関連付けず、その日のタイムライン軸に直接当てはめる。
+    // 軸は14時始まり〜翌14時なので、14時以降ならその日、14時より前なら翌日の扱いになる）
     (rec.meds||[]).forEach(m=>{
       if(!m) return;
       try{
-        const night1 = tl.sessions.find(s=>s.key==='night1');
-        const refMoment = (night1 && night1.range) ? night1.range.start
-          : (tl.sessions.map(s=>s.range).find(Boolean) ? tl.sessions.map(s=>s.range).find(Boolean).start : null);
-        const dt = refMoment ? resolveBeforeMoment(m, refMoment) : combineDateTime(rec.date, m);
+        const dt = resolveOnAxis(m, tl.timelineStart);
         const offset = diffMinutes(tl.timelineStart, dt);
         const dot = document.createElement('div');
-        dot.className = 'event-dot';
+        dot.className = 'event-dot med-dot';
         dot.style.left = clampPct(offset/totalMinutes*100) + '%';
         dot.style.background = 'var(--c-med)';
         dot.title = `服薬: ${m}`;
